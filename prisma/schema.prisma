@@ -4,10 +4,47 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model Rarity {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  cards Card[]
+}
+
+model CardType {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  cards Card[]
+}
+
+model Card {
+  id              Int      @id @default(autoincrement())
+  name            String
+  manaCost        String?
+  oracleText      String?
+  power           String?
+  toughness       String?
+  setCode         String   @default("FIN")
+  collectorNumber String
+  artist          String?
+  imageUrl        String?
+  displayOrder    Int      @default(0)
+  rarityId        Int
+  cardTypeId      Int
+  rarity          Rarity   @relation(fields: [rarityId], references: [id])
+  cardType        CardType @relation(fields: [cardTypeId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([setCode, collectorNumber])
+  @@index([setCode])
+  @@index([name])
+  @@index([rarityId])
+  @@index([cardTypeId])
 }
