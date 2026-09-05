@@ -13,16 +13,20 @@ import { UpdateCardDto } from './dto/update-card.dto';
 export class CardsService {
     constructor(private readonly prisma: PrismaService) {}
 
-    findAll(): Promise<Card[]> {
+    findAll() {
         return this.prisma.card.findMany({
+            include: { rarity: true, cardType: true },
             orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],
         });
     }
 
-    async findOne(idValue: string): Promise<Card> {
+    async findOne(idValue: string) {
         const id = this.parseId(idValue);
 
-        const card = await this.prisma.card.findUnique({ where: { id } });
+        const card = await this.prisma.card.findUnique({
+            where: { id },
+            include: { rarity: true, cardType: true },
+        });
 
         if (!card) {
             throw new NotFoundException('Card not found');
@@ -31,31 +35,67 @@ export class CardsService {
         return card;
     }
 
-    async create(createCardDto: CreateCardDto): Promise<Card> {
+    async create(createCardDto: CreateCardDto) {
         this.validateCreate(createCardDto);
+        const { rarityId, cardTypeId } = await this.getCatalogIds(
+            createCardDto.rarity,
+            createCardDto.type,
+        );
 
         try {
-            return await this.prisma.card.create({
+            const card = await this.prisma.card.create({
                 data: {
-                    ...createCardDto,
+                    name: createCardDto.name,
+                    manaCost: createCardDto.manaCost,
+                    oracleText: createCardDto.oracleText,
+                    power: createCardDto.power,
+                    toughness: createCardDto.toughness,
                     setCode: createCardDto.setCode ?? 'FIN',
+                    collectorNumber: createCardDto.collectorNumber,
+                    artist: createCardDto.artist,
+                    imageUrl: createCardDto.imageUrl,
+                    displayOrder: createCardDto.displayOrder ?? 0,
+                    rarityId,
+                    cardTypeId,
                 },
             });
+
+            return this.findOne(String(card.id));
         } catch (error) {
             this.handleUniqueConstraint(error);
         }
     }
 
-    async update(idValue: string, updateCardDto: UpdateCardDto): Promise<Card> {
+    async update(idValue: string, updateCardDto: UpdateCardDto) {
         const id = this.parseId(idValue);
         await this.findOne(idValue);
         this.validateUpdate(updateCardDto);
+        const { type, rarity, ...cardFields } = updateCardDto;
+        const data: Prisma.CardUpdateInput = cardFields;
+
+        if (type !== undefined) {
+            const { cardTypeId } = await this.getCatalogIds(
+                undefined,
+                type,
+            );
+            data.cardType = { connect: { id: cardTypeId } };
+        }
+
+        if (rarity !== undefined) {
+            const { rarityId } = await this.getCatalogIds(
+                rarity,
+                undefined,
+            );
+            data.rarity = { connect: { id: rarityId } };
+        }
 
         try {
-            return await this.prisma.card.update({
+            await this.prisma.card.update({
                 where: { id },
-                data: updateCardDto,
+                data,
             });
+
+            return this.findOne(idValue);
         } catch (error) {
             this.handleUniqueConstraint(error);
         }
@@ -132,6 +172,31 @@ export class CardsService {
         if (typeof value !== 'string' || value.trim().length === 0) {
             throw new BadRequestException(`${field} is required`);
         }
+    }
+
+    private async getCatalogIds(
+        rarityName: string | null | undefined,
+        cardTypeName: string | null | undefined,
+    ): Promise<{ rarityId: number; cardTypeId: number }> {
+        const rarity = rarityName
+            ? await this.prisma.rarity.upsert({
+                  where: { name: rarityName },
+                  create: { name: rarityName },
+                  update: {},
+              })
+            : undefined;
+        const cardType = cardTypeName
+            ? await this.prisma.cardType.upsert({
+                  where: { name: cardTypeName },
+                  create: { name: cardTypeName },
+                  update: {},
+              })
+            : undefined;
+
+        return {
+            rarityId: rarity?.id ?? 0,
+            cardTypeId: cardType?.id ?? 0,
+        };
     }
 
     private handleUniqueConstraint(error: unknown): never {

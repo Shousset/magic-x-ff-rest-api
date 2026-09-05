@@ -61,11 +61,11 @@ function mapCard(card: ScryfallCard, index: number) {
     return {
         name: card.name,
         manaCost: combineFaces(card, 'mana_cost'),
-        type: combineFaces(card, 'type_line') ?? 'Unknown',
         oracleText: combineFaces(card, 'oracle_text'),
         power: combineFaces(card, 'power'),
         toughness: combineFaces(card, 'toughness'),
-        rarity: card.rarity,
+        rarityName: card.rarity,
+        cardTypeName: combineFaces(card, 'type_line') ?? 'Unknown',
         setCode: card.set.toUpperCase(),
         collectorNumber,
         artist: card.artist ?? combineFaces(card, 'artist'),
@@ -104,6 +104,17 @@ async function importCards(): Promise<void> {
 
             for (const [index, card] of page.data.entries()) {
                 const data = mapCard(card, processed + index);
+                const rarity = await prisma.rarity.upsert({
+                    where: { name: data.rarityName },
+                    create: { name: data.rarityName },
+                    update: {},
+                });
+                const cardType = await prisma.cardType.upsert({
+                    where: { name: data.cardTypeName },
+                    create: { name: data.cardTypeName },
+                    update: {},
+                });
+                const { rarityName, cardTypeName, ...cardData } = data;
                 const existing = await prisma.card.findUnique({
                     where: {
                         setCode_collectorNumber: {
@@ -121,8 +132,8 @@ async function importCards(): Promise<void> {
                             collectorNumber: data.collectorNumber,
                         },
                     },
-                    create: data,
-                    update: data,
+                    create: { ...cardData, rarityId: rarity.id, cardTypeId: cardType.id },
+                    update: { ...cardData, rarityId: rarity.id, cardTypeId: cardType.id },
                 });
 
                 existing ? updated++ : inserted++;
