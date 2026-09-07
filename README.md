@@ -1,3 +1,17 @@
+## Magic FIN
+
+API REST sencilla para consultar las cartas de Magic: The Gathering - Final Fantasy (`FIN`). Incluye una interfaz móvil básica servida por NestJS en `/`, conectada a PostgreSQL mediante Prisma.
+
+### Ejecutar
+
+1. Crea `.env` y configura `DATABASE_URL` con la conexion de PostgreSQL.
+2. Instala dependencias con `npm install`.
+3. Importa las cartas reales desde Scryfall con `npm run import:cards`.
+4. Inicia la aplicación con `npm run start:dev`.
+5. Abre `http://localhost:3000`.
+
+La interfaz permite buscar por nombre, filtrar por rareza y consultar la información legible de cada carta. La API también expone `GET /cards`, `GET /cards?search=Aerith`, `GET /cards?rarity=rare`, `GET /rarities` y `GET /card-types`. Consulta [PROJECT_GUIDE.md](PROJECT_GUIDE.md) para conocer la arquitectura y probarla con Insomnia.
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>

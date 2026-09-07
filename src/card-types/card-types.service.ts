@@ -3,9 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CardTypesService {
-    constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-    findAll() {
-        return this.prisma.cardType.findMany({ orderBy: { name: 'asc' } });
-    }
+  findAll() {
+    return this.prisma.cardType.findMany({ orderBy: { name: 'asc' } });
+  }
 }

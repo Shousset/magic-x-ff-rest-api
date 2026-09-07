@@ -662,10 +662,8 @@ Crear:
 
 ```text
 .env
-.env.example
 ```
 
-`.env.example` debe mostrar qué variables necesita el proyecto sin incluir credenciales reales.
 
 Por ejemplo:
 

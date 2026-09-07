@@ -4,8 +4,8 @@ import { CardsController } from './cards.controller';
 import { CardsService } from './cards.service';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [CardsController],
-    providers: [CardsService],
+  imports: [PrismaModule],
+  controllers: [CardsController],
+  providers: [CardsService],
 })
 export class CardsModule {}
