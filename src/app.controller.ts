@@ -10,7 +10,7 @@ export class AppController {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Magic FIN</title>
+  <title>Magic The Gathering (MTG) Collection</title>
   <style>
     :root { color-scheme: light; font-family: system-ui, sans-serif; }
     * { box-sizing: border-box; }
@@ -38,9 +38,9 @@ export class AppController {
 <body>
   <main>
     <header>
-      <h1>Magic: FIN</h1>
-      <p>Cartas de Final Fantasy</p>
-    </header>
+      <h1>Magic The Gathering (MTG) Collection</h1>
+      <p>Coleccion de cartas de Magic The Gathering</p>
+      <img src="./img/MTG.png">
     <section class="controls" aria-label="Filtros de cartas">
       <input id="search" type="search" placeholder="Buscar por nombre..." autocomplete="off">
       <select id="rarity" aria-label="Elegir rareza">
