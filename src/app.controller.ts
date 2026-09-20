@@ -38,9 +38,11 @@ export class AppController {
 <body>
   <main>
     <header>
+    <div>
+      <img src="aplicacionees-web-II\magic-x-ff-rest-api\public\img\MTG.png" width="300" height="300">
       <h1>Magic The Gathering (MTG) Collection</h1>
-      <p>Coleccion de cartas de Magic The Gathering</p>
-      <img src="./img/MTG.png">
+    </div>
+    <p>Coleccion de cartas de Magic The Gathering</p>
     <section class="controls" aria-label="Filtros de cartas">
       <input id="search" type="search" placeholder="Buscar por nombre..." autocomplete="off">
       <select id="rarity" aria-label="Elegir rareza">
