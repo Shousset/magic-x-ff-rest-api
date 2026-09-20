@@ -9,6 +9,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url= env("DATABASE_URL")
 }
 
 model Rarity {
@@ -47,4 +48,39 @@ model Card {
   @@index([name])
   @@index([rarityId])
   @@index([cardTypeId])
+
+  collectionEntries CollectionEntry[]
+}
+
+enum UserRole {
+  ADMINISTRATOR
+  PLAYER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  role         UserRole @default(PLAYER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  collectionEntries CollectionEntry[]
+}
+
+model CollectionEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  cardId    Int
+  quantity  Int      @default(1)
+  isFoil    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, cardId, isFoil], name: "userId_cardId_isFoil")
+  @@index([userId])
+  @@index([cardId])
 }
