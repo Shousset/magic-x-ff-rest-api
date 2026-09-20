@@ -105,7 +105,23 @@ export class CardsService {
   async remove(idValue: string): Promise<{ message: string }> {
     const id = this.parseId(idValue);
     await this.findOne(idValue);
-    await this.prisma.card.delete({ where: { id } });
+
+    try {
+      await this.prisma.card.delete({ where: { id } });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        // La carta está en al menos una colección (CollectionEntry la
+        // referencia con onDelete: Restrict): no se puede borrar sin antes
+        // quitarla de esas colecciones.
+        throw new ConflictException(
+          'Card cannot be deleted because it is part of a collection',
+        );
+      }
+      throw error;
+    }
 
     return { message: 'Card deleted successfully' };
   }
