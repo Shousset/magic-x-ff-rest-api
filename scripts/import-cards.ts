@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaService } from '../src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 const SCRYFALL_URL =
     'https://api.scryfall.com/cards/search?q=set%3Afin&unique=prints&order=set';
