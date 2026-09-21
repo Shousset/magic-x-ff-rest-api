@@ -68,7 +68,7 @@ export class CardsService {
       });
 
       return this.findOne(String(card.id));
-    } catch (error) {
+    } catch (error: unknown) {
       this.handleUniqueConstraint(error);
     }
   }
@@ -97,7 +97,7 @@ export class CardsService {
       });
 
       return this.findOne(idValue);
-    } catch (error) {
+    } catch (error: unknown) {
       this.handleUniqueConstraint(error);
     }
   }
@@ -232,7 +232,15 @@ export class CardsService {
     };
   }
 
-  private handleUniqueConstraint(): never {
+  private handleUniqueConstraint(error: unknown): never {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2003'
+    ) {
+      throw new ConflictException(
+        'A card with the same setCode and collectorNumber already exists',
+      );
+    }
     throw new ConflictException(
       'A card with the same setCode and collectorNumber already exists',
     );
