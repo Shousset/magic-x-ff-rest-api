@@ -1,31 +1,27 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import 'dotenv/config';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
-  constructor() {
-    if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL is not configured');
-    }
-
-    const databaseUrl = new URL(process.env.DATABASE_URL);
-    const schema = databaseUrl.searchParams.get('schema') ?? 'public';
-    databaseUrl.searchParams.delete('sslmode');
-    databaseUrl.searchParams.delete('schema');
-
-    const adapter = new PrismaPg(
-      {
-        connectionString: databaseUrl.toString(),
-        ssl: { rejectUnauthorized: false },
-      },
-      { schema },
-    );
-
-    super({ adapter });
-  }
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
+  private readonly logger = new Logger(PrismaService.name);
 
   async onModuleInit(): Promise<void> {
-    await this.$connect();
+    try {
+      await this.$connect();
+      this.logger.log('✅ Conexión exitosa a la base de datos PostgreSQL.');
+    } catch (error) {
+      this.logger.warn(
+        '⚠️ No se pudo conectar a la base de datos PostgreSQL en este momento. ' +
+          'Asegúrate de configurar la variable DATABASE_URL en el archivo .env con las credenciales de tu base de datos y que PostgreSQL esté corriendo.',
+      );
+    }
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.$disconnect();
   }
 }
