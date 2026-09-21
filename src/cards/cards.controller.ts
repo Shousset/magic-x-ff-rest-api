@@ -21,6 +21,7 @@ import { UpdateCardDto } from './dto/update-card.dto';
 export class CardsController {
   constructor(private readonly cardsService: CardsService) {}
 
+  // Lectura pública: no requiere token, se mantiene igual que antes.
   @Get()
   async findAll(
     @Query('search') search?: string,
@@ -35,24 +36,26 @@ export class CardsController {
     return this.cardsService.findOne(id);
   }
 
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(UserRole.ADMINISTRATOR)
+  // Escritura: solo un usuario autenticado con rol ADMINISTRATOR puede
+  // seguir cargando/corrigiendo/borrando cartas (p. ej. desde Insomnia).
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMINISTRATOR)
   @Post()
   create(@Body() createCardDto: CreateCardDto) {
     return this.cardsService.create(createCardDto);
   }
 
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(UserRole.ADMINISTRATOR)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMINISTRATOR)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCardDto: UpdateCardDto) {
     return this.cardsService.update(id, updateCardDto);
   }
 
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(UserRole.ADMINISTRATOR)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMINISTRATOR)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.cardsService.remove(id);
   }
-} 
+}

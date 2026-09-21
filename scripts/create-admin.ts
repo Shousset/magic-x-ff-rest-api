@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../src/prisma/prisma.service';
 import { hashPassword } from '../src/auth/password';
 import { UserRole } from '@prisma/client';
 
