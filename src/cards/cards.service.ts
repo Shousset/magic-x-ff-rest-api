@@ -232,9 +232,16 @@ export class CardsService {
     };
   }
 
-private handleUniqueConstraint(error: unknown): never {
-  throw new ConflictException(
-    'A card with the same setCode and collectorNumber already exists',
-  );
-}
+  private handleUniqueConstraint(error: unknown): never {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      throw new ConflictException(
+        'A card with the same setCode and collectorNumber already exists',
+      );
+    }
+
+    throw error;
+  }
 }

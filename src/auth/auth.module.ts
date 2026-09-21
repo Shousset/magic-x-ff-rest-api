@@ -5,12 +5,13 @@ import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { RolesGuard } from './roles.guard';
 import { jwtOptions } from './auth.config';
 
 @Module({
   imports: [UsersModule, PassportModule, JwtModule.register(jwtOptions())],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [JwtModule, PassportModule],
+  providers: [AuthService, JwtStrategy, RolesGuard],
+  exports: [JwtModule, PassportModule, RolesGuard],
 })
 export class AuthModule {}
