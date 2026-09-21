@@ -232,9 +232,9 @@ export class CardsService {
     };
   }
 
-private handleUniqueConstraint(error: unknown): never {
-  throw new ConflictException(
-    'A card with the same setCode and collectorNumber already exists',
-  );
-}
+  private handleUniqueConstraint(): never {
+    throw new ConflictException(
+      'A card with the same setCode and collectorNumber already exists',
+    );
+  }
 }

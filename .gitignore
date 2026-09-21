@@ -1,62 +1,46 @@
-# compiled output
-/dist
-/node_modules
-/build
+```
+# Dependencies
+node_modules/
 
-# Logs
-logs
+# Logs and temp files
 *.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
+*.tmp
 
-# OS
-.DS_Store
-
-# Tests
-/coverage
-/.nyc_output
-
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# dotenv environment variable files
+# Environment variables
 .env
-.env.development.local
-.env.test.local
-.env.production.local
 .env.local
+*.env.*
 
-# temp directory
-.temp
-.tmp
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# Build outputs
+dist/
+build/
+target/
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-/generated/prisma
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
 
-# MarkDown
+# OS generated files
+.DS_Store
+Thumbs.db
 
-.md
+# Testing
+.nyc_output/
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+```
