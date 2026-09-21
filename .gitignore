@@ -1,3 +1,16 @@
-```ts
+```
+# Dependencies
+node_modules/
 
+# Build artifacts
+dist/
+*.js.map
+*.tsbuildinfo
+
+# Environment
+.env
+
+# Logs
+*.log
+server.log
 ```
