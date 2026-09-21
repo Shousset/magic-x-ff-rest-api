@@ -39,7 +39,7 @@ export class AppController {
   <main>
     <header>
     <div>
-      <img src="aplicacionees-web-II\magic-x-ff-rest-api\public\img\MTG.png" width="300" height="300">
+      <img src="magic-x-ff-rest-api/public/img/MTG.png" width="300" height="300">
       <h1>Magic The Gathering (MTG) Collection</h1>
     </div>
     <p>Coleccion de cartas de Magic The Gathering</p>

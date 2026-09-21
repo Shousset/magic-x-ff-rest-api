@@ -1,11 +1,7 @@
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
-const deriveKey = promisify(scrypt) as (
-  password: string,
-  salt: string,
-  keylen: number,
-) => Promise<Buffer>;
+const deriveKey = promisify(scrypt);
 
 // scrypt$<N>$<r>$<p>$<salt hex 32 chars>$<key hex 128 chars>
 const HASH_PATTERN = /^scrypt\$16384\$8\$1\$([a-f0-9]{32})\$([a-f0-9]{128})$/;
@@ -48,7 +44,4 @@ export async function verifyPassword(
  * cuenta existe o no.
  */
 export const dummyHash =
-  'scrypt$16384$8$1$' +
-  '0'.repeat(32) +
-  '$' +
-  '0'.repeat(128);
+  'scrypt$16384$8$1$' + '0'.repeat(32) + '$' + '0'.repeat(128);
