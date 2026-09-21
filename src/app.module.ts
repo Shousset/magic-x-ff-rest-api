@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CardsModule } from './cards/cards.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CardTypesModule } from './card-types/card-types.module';
@@ -14,9 +14,9 @@ import { AppController } from './app.controller';
     CardsModule,
     RaritiesModule,
     CardTypesModule,
-    UsersModule,
-    AuthModule,
-    CollectionsModule,
+    forwardRef(() => UsersModule),
+    forwardRef(() => AuthModule),
+    forwardRef(() => CollectionsModule),
   ],
   controllers: [AppController],
   providers: [],
