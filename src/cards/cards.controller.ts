@@ -26,9 +26,15 @@ export class CardsController {
   async findAll(
     @Query('search') search?: string,
     @Query('rarity') rarity?: string,
+    @Query('setCode') setCode?: string,
   ) {
-    const cards = await this.cardsService.findAll({ search, rarity });
+    const cards = await this.cardsService.findAll({ search, rarity, setCode });
     return { data: cards };
+  }
+
+  @Get('sets')
+  getSets() {
+    return this.cardsService.getAvailableSets();
   }
 
   @Get(':id')
