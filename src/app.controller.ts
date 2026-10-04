@@ -1787,9 +1787,20 @@ export class AppController {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Credenciales incorrectas');
+        if (typeof data.access_token !== 'string' || !data.access_token) {
+          throw new Error('El servidor no devolvió un token de acceso válido');
+        }
 
-        userToken = data.accessToken;
-        currentUser = { username: data.username || username, role: data.role || 'PLAYER' };
+        const userRes = await fetch('/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + data.access_token }
+        });
+        const user = await userRes.json();
+        if (!userRes.ok) {
+          throw new Error(user.message || 'No se pudo validar la sesión');
+        }
+
+        userToken = data.access_token;
+        currentUser = { username: user.username, role: user.role };
         localStorage.setItem('jwt_token', userToken);
         localStorage.setItem('user_info', JSON.stringify(currentUser));
 

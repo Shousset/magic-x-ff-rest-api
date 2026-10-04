@@ -8,7 +8,13 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  
+
+  // El frontend autentica las solicitudes con Bearer tokens, no con cookies.
+  app.enableCors({
+    origin: '*', // En producción, cambiar por el dominio exacto del frontend
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  });
+
   const candidatePaths = [
     join(process.cwd(), 'public'),
     join(__dirname, '..', 'public'),
@@ -22,7 +28,8 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      whitelist: false,
+      whitelist: true, // Filtra propiedades que no esten en el DTO
+      forbidNonWhitelisted: true, // Lanza error si hay propiedades adicionales
     }),
   );
   await app.listen(process.env.PORT ?? 3000);

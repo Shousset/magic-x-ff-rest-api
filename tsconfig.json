@@ -22,5 +22,12 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },
-  "exclude": ["node_modules", "dist", "test", "src/collections/angular-v18", "frontend-angular18"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "frontend",
+    "src/collections/angular-v18",
+    "frontend-angular18"
+  ]
 }
