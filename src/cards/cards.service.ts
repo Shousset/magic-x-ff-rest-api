@@ -255,8 +255,11 @@ export class CardsService {
 
   private handleUniqueConstraint(error: unknown): never {
     if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002' &&
+      error instanceof Prisma.PrismaClientKnownRequestError
     ) {
       throw new ConflictException(
         'A card with the same setCode and collectorNumber already exists',

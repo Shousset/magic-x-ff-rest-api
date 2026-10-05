@@ -6,7 +6,6 @@ import { RaritiesModule } from './rarities/rarities.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CollectionsModule } from './collections/collections.module';
-import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -18,7 +17,5 @@ import { AppController } from './app.controller';
     AuthModule,
     CollectionsModule,
   ],
-  controllers: [AppController],
-  providers: [],
 })
 export class AppModule {}
