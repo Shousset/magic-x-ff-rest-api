@@ -13,18 +13,39 @@ import { UpdateCardDto } from './dto/update-card.dto';
 export class CardsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(filters: { search?: string; rarity?: string } = {}) {
+  findAll(filters: { search?: string; rarity?: string; setCode?: string } = {}) {
     const search = filters.search?.trim();
     const rarity = filters.rarity?.trim();
+    const setCode = filters.setCode?.trim().toUpperCase();
 
     return this.prisma.card.findMany({
       where: {
         ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
         ...(rarity ? { rarity: { name: rarity } } : {}),
+        ...(setCode ? { setCode } : {}),
       },
       include: { rarity: true, cardType: true },
       orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],
     });
+  }
+
+  async getAvailableSets() {
+    const setNames: Record<string, string> = {
+      FIN: 'Final Fantasy',
+      HOB: 'The Hobbit',
+    };
+
+    const grouped = await this.prisma.card.groupBy({
+      by: ['setCode'],
+      _count: { id: true },
+      orderBy: { setCode: 'asc' },
+    });
+
+    return grouped.map((group) => ({
+      setCode: group.setCode,
+      name: setNames[group.setCode] ?? group.setCode,
+      totalCards: group._count.id,
+    }));
   }
 
   async findOne(idValue: string) {
@@ -234,8 +255,11 @@ export class CardsService {
 
   private handleUniqueConstraint(error: unknown): never {
     if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002' &&
+      error instanceof Prisma.PrismaClientKnownRequestError
     ) {
       throw new ConflictException(
         'A card with the same setCode and collectorNumber already exists',
