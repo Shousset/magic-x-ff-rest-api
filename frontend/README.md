@@ -1,24 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Interfaz Next.js para el catálogo. En desarrollo funciona junto con la API NestJS del directorio raíz.
 
-## Getting Started
+## Ejecutar frontend y API en local
 
-First, run the development server:
+Abre dos terminales desde la raíz del proyecto (`magic-x-ff-rest-api`).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+En la primera, inicia la API:
+
+```powershell
+cd "C:\ruta\al\proyecto\magic-x-ff-rest-api"
+npm run start:dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+NestJS escucha en `http://localhost:3002` (variable `PORT` del `.env`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+En la segunda, inicia el frontend:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```powershell
+cd "C:\ruta\al\proyecto\magic-x-ff-rest-api\frontend"
+npm run dev
+```
+
+Abre <http://localhost:3001>. El frontend usa rutas relativas como `/cards` y Next.js las reenvía a NestJS en `http://localhost:3002` mediante los rewrites de `next.config.ts`. Si cambias el puerto de la API, ajusta `NEST_API_ORIGIN` y reinicia Next.js.
+
+No es necesario llamar a la API desde el navegador con una URL absoluta ni cambiar la base de datos; las solicitudes pasan por el servidor Next.js.
+
+## Comandos
+
+```powershell
+npm run dev
+npm run lint
+npm run build
+```
 
 ## Learn More
 

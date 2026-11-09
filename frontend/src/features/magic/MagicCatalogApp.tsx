@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { request } from '@/lib/api';
 import type {
   Card,
+  CardPage,
   CollectionEntry,
   CollectionSummary,
   PublicUser,
@@ -12,8 +13,31 @@ import type {
 } from '@/types/magic';
 import { AddCardModal } from '@/features/admin/AddCardModal';
 import { LoginModal } from '@/features/auth/LoginModal';
+import { VirtualizedCardGrid } from '@/features/magic/VirtualizedCardGrid';
+
+// Skeleton loading components
+const SkeletonCard = () => (
+  <div className="skeleton-card">
+    <div className="skeleton-img" />
+    <div className="skeleton-content">
+      <div className="skeleton-line" />
+      <div className="skeleton-line" />
+      <div className="skeleton-line" />
+    </div>
+  </div>
+);
+
+const SkeletonGrid = ({ count = 12 }) => (
+  <div className="skeleton-grid">
+    {Array.from({ length: count }).map((_, i) => (
+      <SkeletonCard key={i} />
+    ))}
+  </div>
+);
 
 const fallbackImage = '/img/MTG.png';
+
+const CARDS_PER_PAGE = 50;
 
 export default function Home() {
   const [cards, setCards] = useState<Card[]>([]);
@@ -27,6 +51,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'catalog' | 'sets' | 'mine'>(
     'catalog',
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -145,23 +173,33 @@ export default function Home() {
     if (debouncedSearch) params.set('search', debouncedSearch);
     if (rarity) params.set('rarity', rarity);
     if (selectedSet) params.set('setCode', selectedSet);
+    params.set('limit', String(CARDS_PER_PAGE));
+    params.set('offset', String((currentPage - 1) * CARDS_PER_PAGE));
 
     try {
-      const result = await request<{ data: Card[] }>(`/cards?${params}`);
+      const result = await request<CardPage>(`/cards?${params}`);
       setCards(result.data);
+      const totalPagesCalc = Math.ceil(result.meta.total / CARDS_PER_PAGE);
+      setTotalPages(totalPagesCalc);
+      setHasMore(currentPage < totalPagesCalc);
       const setLabel = selectedSet
         ? ` en ${selectedSet === 'HOB' ? 'The Hobbit' : 'Final Fantasy'}`
         : '';
-      setCatalogStatus(
-        `Mostrando ${result.data.length} carta${result.data.length === 1 ? '' : 's'}${setLabel}`,
-      );
+      setCatalogStatus(`Mostrando ${result.data.length} carta${result.data.length === 1 ? '' : 's'}${setLabel}`);
+      setLoadingMore(false);
     } catch (error) {
       setCards([]);
-      setCatalogStatus(
-        error instanceof Error ? error.message : 'Error al consultar catálogo',
-      );
+      setCatalogStatus(error instanceof Error ? error.message : 'Error al consultar catálogo');
+      setLoadingMore(false);
     }
-  }, [debouncedSearch, rarity, selectedSet]);
+  }, [debouncedSearch, rarity, selectedSet, currentPage]);
+
+  const handleLoadMore = useCallback(() => {
+    setLoadingMore(true);
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     let cancelled = false;
@@ -203,6 +241,10 @@ export default function Home() {
   }, [toast]);
 
   function selectSet(code: string) {
+    setSearch(''); // reset search when switching sets
+    setCurrentPage(1);
+    setTotalPages(1);
+    setHasMore(true);
     setSelectedSet(code);
     setActiveTab('sets');
   }
@@ -400,7 +442,7 @@ export default function Home() {
             />
             <span className="brand-divider" />
             <span className="brand-subtitle-badge">
-              Final Fantasy &amp; The Hobbit
+              Final Fantasy &amp; The Hobbit &amp; Reality Fracture
             </span>
           </button>
           <div className="header-actions">
@@ -551,6 +593,28 @@ export default function Home() {
                   <span className="collection-pill-code">FIN</span>
                 </button>
                 <button
+                  className={`collection-hero-card card-fra ${selectedSet === 'FRA' ? 'active' : ''}`}
+                  onClick={() => selectSet('FRA')}
+                  type="button"
+                >
+                  <span className="collection-info">
+                    <img
+                      src="/img/jace-reality-sculptor.jpg"
+                      className="franchise-thumb"
+                      alt="Jace, Reality Sculptor"
+                    />
+                    <span className="collection-meta">
+                      <strong>Reality Fracture</strong>
+                      <span>
+                        {sets.find((set) => set.setCode === 'FRA')
+                          ?.totalCards ?? 0}{' '}
+                        cartas registradas
+                      </span>
+                    </span>
+                  </span>
+                  <span className="collection-pill-code">FRA</span>
+                </button>
+                <button
                   className={`collection-hero-card card-all ${selectedSet === '' ? 'active' : ''}`}
                   onClick={() => selectSet('')}
                   type="button"
@@ -583,7 +647,7 @@ export default function Home() {
                 <input
                   type="search"
                   className="search-input"
-                  placeholder="Buscar carta por nombre (ej: Bilbo, Cloud, Sephiroth, Gandalf)..."
+                  placeholder="Buscar carta por nombre (ej: Bilbo, Cloud, Jace, Gandalf)..."
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   autoComplete="off"
@@ -611,6 +675,8 @@ export default function Home() {
                   Colección activa:{' '}
                   {selectedSet === 'HOB'
                     ? 'The Hobbit (HOB)'
+                    : selectedSet === 'FRA'
+                    ? 'Reality Fracture (FRA)'
                     : 'Final Fantasy (FIN)'}
                 </span>
               )}
@@ -618,46 +684,14 @@ export default function Home() {
 
             <main className="cards-grid">
               {cards.length ? (
-                cards.map((card) => (
-                  <button
-                    className="card-item"
-                    key={card.id}
-                    onClick={() => {
-                      setSelectedCard(card);
-                      setQuantity(1);
-                      setFoil(false);
-                    }}
-                    type="button"
-                  >
-                    <span className="card-img-wrapper">
-                      <span
-                        className={`card-set-badge ${card.setCode === 'HOB' ? 'set-badge-hob' : 'set-badge-fin'}`}
-                      >
-                        {card.setCode || 'FIN'}
-                      </span>
-                      <img
-                        src={card.imageUrl || fallbackImage}
-                        className="card-img"
-                        alt={card.name}
-                        loading="lazy"
-                        onError={(event) => {
-                          event.currentTarget.src = fallbackImage;
-                        }}
-                      />
-                    </span>
-                    <span className="card-body">
-                      <strong className="card-name">{card.name}</strong>
-                      <span className="card-badges">
-                        <span
-                          className={`badge badge-rarity-${card.rarity.name.toLowerCase()}`}
-                        >
-                          {card.rarity.name}
-                        </span>
-                        <span className="badge">{card.cardType.name}</span>
-                      </span>
-                    </span>
-                  </button>
-                ))
+                <VirtualizedCardGrid
+                  cards={cards}
+                  onCardSelect={(card) => {
+                    setSelectedCard(card);
+                    setQuantity(1);
+                    setFoil(false);
+                  }}
+                />
               ) : (
                 <div className="empty-state">
                   <h3>
@@ -673,6 +707,14 @@ export default function Home() {
                 </div>
               )}
             </main>
+            {hasMore && !loadingMore && (
+              <div className="load-more-wrapper">
+                <button className="btn btn-outline" onClick={handleLoadMore} type="button">
+                  Cargar más
+                </button>
+              </div>
+            )}
+            {loadingMore && <div className="loading-more">Cargando…</div>}
           </section>
         ) : (
           <section className="user-collection-section">
@@ -753,7 +795,13 @@ export default function Home() {
                           </strong>
                           <div className="entry-badges">
                             <span
-                              className={`collection-pill-code ${entry.card.setCode === 'HOB' ? 'card-hob' : 'card-fin'}`}
+                              className={`collection-pill-code ${
+                                entry.card.setCode === 'HOB'
+                                  ? 'card-hob'
+                                  : entry.card.setCode === 'FRA'
+                                  ? 'card-fra'
+                                  : 'card-fin'
+                              }`}
                             >
                               {entry.card.setCode}
                             </span>
@@ -845,7 +893,13 @@ export default function Home() {
                 />
                 <div className="detail-pills">
                   <span
-                    className={`collection-pill-code ${selectedCard.setCode === 'HOB' ? 'card-hob' : 'card-fin'}`}
+                    className={`collection-pill-code ${
+                      selectedCard.setCode === 'HOB'
+                        ? 'card-hob'
+                        : selectedCard.setCode === 'FRA'
+                        ? 'card-fra'
+                        : 'card-fin'
+                    }`}
                   >
                     {selectedCard.setCode}
                   </span>

@@ -27,6 +27,11 @@ export type CollectionSummary = {
   byRarity: Record<string, number>;
 };
 
+export type CollectionPage = {
+  data: CollectionEntry[];
+  meta: { total: number; limit: number; offset: number };
+};
+
 export type PublicUser = {
   username: string;
   role: 'ADMINISTRATOR' | 'PLAYER';
@@ -36,4 +41,9 @@ export type SetInfo = {
   setCode: string;
   name: string;
   totalCards: number;
+};
+
+export type CardPage = {
+  data: Card[];
+  meta: { total: number; limit: number; offset: number };
 };
