@@ -21,6 +21,15 @@
   margin-bottom: 6px;
   background: var(--badge-bg);
 }
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(210px, 1fr)
+  );
+  gap: 16px;
+  padding: 16px 0;
+}
 .load-more-wrapper {
   text-align: center;
   margin: 16px 0;

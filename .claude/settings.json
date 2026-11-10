@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s *)",
+      "Bash(curl -sv *)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(npx prisma validate *)",
+      "Bash(npx prisma migrate status *)",
+      "Bash(netstat -ano *)",
+      "Bash(ps aux *)",
+      "Bash(tasklist *)",
+      "Bash(where *)",
+      "Bash(python3 -c *)",
+      "Bash(python -c *)",
+      "Bash(node --version)",
+      "Bash(node -v)",
+      "Bash(npm --version)",
+      "Bash(npx --version)"
+    ]
+  }
+}

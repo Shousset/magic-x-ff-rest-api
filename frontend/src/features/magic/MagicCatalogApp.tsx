@@ -7,6 +7,7 @@ import type {
   Card,
   CardPage,
   CollectionEntry,
+  CollectionPage,
   CollectionSummary,
   PublicUser,
   SetInfo,
@@ -54,6 +55,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [token, setToken] = useState<string | null>(null);
@@ -142,12 +144,12 @@ export default function Home() {
     setLoadingCollection(true);
     setCollectionError('');
     try {
-      const [nextSummary, nextEntries] = await Promise.all([
+      const [nextSummary, nextPage] = await Promise.all([
         request<CollectionSummary>('/collections/summary', {}, activeToken),
-        request<CollectionEntry[]>('/collections', {}, activeToken),
+        request<CollectionPage>('/collections', {}, activeToken),
       ]);
       setSummary(nextSummary);
-      setEntries(nextEntries);
+      setEntries(nextPage.data);
     } catch (error) {
       setCollectionError(
         error instanceof Error
@@ -168,6 +170,7 @@ export default function Home() {
   }, [token, loadCollection]);
 
   const loadCards = useCallback(async () => {
+    setLoadingCatalog(true);
     setCatalogStatus('Buscando cartas...');
     const params = new URLSearchParams();
     if (debouncedSearch) params.set('search', debouncedSearch);
@@ -187,10 +190,12 @@ export default function Home() {
         : '';
       setCatalogStatus(`Mostrando ${result.data.length} carta${result.data.length === 1 ? '' : 's'}${setLabel}`);
       setLoadingMore(false);
+      setLoadingCatalog(false);
     } catch (error) {
       setCards([]);
       setCatalogStatus(error instanceof Error ? error.message : 'Error al consultar catálogo');
       setLoadingMore(false);
+      setLoadingCatalog(false);
     }
   }, [debouncedSearch, rarity, selectedSet, currentPage]);
 
@@ -683,7 +688,9 @@ export default function Home() {
             </div>
 
             <main className="cards-grid">
-              {cards.length ? (
+              {loadingCatalog && !cards.length ? (
+                <SkeletonGrid count={12} />
+              ) : cards.length ? (
                 <VirtualizedCardGrid
                   cards={cards}
                   onCardSelect={(card) => {

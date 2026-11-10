@@ -13,20 +13,35 @@ import { UpdateCardDto } from './dto/update-card.dto';
 export class CardsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(filters: { search?: string; rarity?: string; setCode?: string } = {}) {
+  findAll(filters: {
+    search?: string;
+    rarity?: string;
+    setCode?: string;
+    limit?: number;
+    offset?: number;
+  } = {}) {
     const search = filters.search?.trim();
     const rarity = filters.rarity?.trim();
     const setCode = filters.setCode?.trim().toUpperCase();
+    const limit = filters.limit ?? 50;
+    const offset = filters.offset ?? 0;
 
-    return this.prisma.card.findMany({
-      where: {
-        ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
-        ...(rarity ? { rarity: { name: rarity } } : {}),
-        ...(setCode ? { setCode } : {}),
-      },
-      include: { rarity: true, cardType: true },
-      orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],
-    });
+    const where = {
+      ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
+      ...(rarity ? { rarity: { name: rarity } } : {}),
+      ...(setCode ? { setCode } : {}),
+    };
+
+    return this.prisma.$transaction([
+      this.prisma.card.findMany({
+        where,
+        include: { rarity: true, cardType: true },
+        orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.card.count({ where }),
+    ]).then(([data, total]) => ({ data, total }));
   }
 
   async getAvailableSets() {

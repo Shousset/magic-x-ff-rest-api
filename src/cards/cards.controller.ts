@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -27,9 +28,17 @@ export class CardsController {
     @Query('search') search?: string,
     @Query('rarity') rarity?: string,
     @Query('setCode') setCode?: string,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
   ) {
-    const cards = await this.cardsService.findAll({ search, rarity, setCode });
-    return { data: cards };
+    const { data, total } = await this.cardsService.findAll({
+      search,
+      rarity,
+      setCode,
+      limit,
+      offset,
+    });
+    return { data, meta: { total, limit: limit ?? total, offset: offset ?? 0 } };
   }
 
   @Get('sets')

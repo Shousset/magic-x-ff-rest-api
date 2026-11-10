@@ -8,16 +8,47 @@ const ENTRY_INCLUDE = {
   card: { include: { rarity: true, cardType: true } },
 } as const;
 
+type Pagination = { limit?: number; offset?: number };
+
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
+
+function resolvePagination(pagination?: Pagination) {
+  const rawLimit = pagination?.limit ?? DEFAULT_LIMIT;
+  const rawOffset = pagination?.offset ?? 0;
+  const limit = Math.min(
+    Math.max(Number.isInteger(rawLimit) ? rawLimit : DEFAULT_LIMIT, 1),
+    MAX_LIMIT,
+  );
+  const offset = Math.max(
+    Number.isInteger(rawOffset) ? rawOffset : 0,
+    0,
+  );
+  return { limit, offset };
+}
+
 @Injectable()
 export class CollectionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAllForUser(userId: string) {
-    return this.prisma.collectionEntry.findMany({
-      where: { userId },
-      include: ENTRY_INCLUDE,
-      orderBy: { createdAt: 'asc' },
-    });
+  async findAllForUser(
+    userId: string,
+    pagination?: Pagination,
+  ): Promise<{ data: unknown[]; meta: { total: number; limit: number; offset: number } }> {
+    const { limit, offset } = resolvePagination(pagination);
+
+    const [data, total] = await Promise.all([
+      this.prisma.collectionEntry.findMany({
+        where: { userId },
+        include: ENTRY_INCLUDE,
+        orderBy: { createdAt: 'asc' },
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.collectionEntry.count({ where: { userId } }),
+    ]);
+
+    return { data, meta: { total, limit, offset } };
   }
 
   async create(userId: string, dto: CreateCollectionEntryDto) {

@@ -6,11 +6,13 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Request,
   UseGuards,
+  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CollectionsService } from './collections.service';
@@ -27,8 +29,15 @@ export class CollectionsController {
   constructor(private readonly collectionsService: CollectionsService) {}
 
   @Get()
-  findAll(@Request() request: AuthenticatedRequest) {
-    return this.collectionsService.findAllForUser(request.user.id); // 200
+  findAll(
+    @Request() request: AuthenticatedRequest,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
+  ) {
+    return this.collectionsService.findAllForUser(request.user.id, {
+      limit,
+      offset,
+    }); // 200
   }
 
   @Get('summary')

@@ -1,15 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url= env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 model Rarity {
@@ -25,46 +20,39 @@ model CardType {
 }
 
 model Card {
-  id              Int      @id @default(autoincrement())
-  name            String
-  manaCost        String?
-  oracleText      String?
-  power           String?
-  toughness       String?
-  setCode         String   @default("FIN")
-  collectorNumber String
-  artist          String?
-  imageUrl        String?
-  displayOrder    Int      @default(0)
-  rarityId        Int
-  cardTypeId      Int
-  rarity          Rarity   @relation(fields: [rarityId], references: [id])
-  cardType        CardType @relation(fields: [cardTypeId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                Int               @id @default(autoincrement())
+  name              String
+  manaCost          String?
+  oracleText        String?
+  power             String?
+  toughness         String?
+  setCode           String            @default("FIN")
+  collectorNumber   String
+  artist            String?
+  imageUrl          String?
+  displayOrder      Int               @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  rarityId          Int
+  cardTypeId        Int
+  cardType          CardType          @relation(fields: [cardTypeId], references: [id])
+  rarity            Rarity            @relation(fields: [rarityId], references: [id])
+  collectionEntries CollectionEntry[]
 
   @@unique([setCode, collectorNumber])
   @@index([setCode])
   @@index([name])
   @@index([rarityId])
   @@index([cardTypeId])
-
-  collectionEntries CollectionEntry[]
-}
-
-enum UserRole {
-  ADMINISTRATOR
-  PLAYER
 }
 
 model User {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  passwordHash String
-  role         UserRole @default(PLAYER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+  id                String            @id @default(uuid())
+  username          String            @unique
+  passwordHash      String
+  role              UserRole          @default(PLAYER)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
   collectionEntries CollectionEntry[]
 }
 
@@ -76,11 +64,15 @@ model CollectionEntry {
   isFoil    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  card Card @relation(fields: [cardId], references: [id], onDelete: Restrict)
+  card      Card     @relation(fields: [cardId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, cardId, isFoil], name: "userId_cardId_isFoil")
   @@index([userId])
   @@index([cardId])
+}
+
+enum UserRole {
+  ADMINISTRATOR
+  PLAYER
 }
