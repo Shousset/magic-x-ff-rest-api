@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
@@ -8,32 +7,43 @@ export declare class CardsService {
     findAll(filters?: {
         search?: string;
         rarity?: string;
-    }): Prisma.PrismaPromise<({
-        rarity: {
+        setCode?: string;
+        limit?: number;
+        offset?: number;
+    }): Promise<{
+        data: ({
+            rarity: {
+                id: number;
+                name: string;
+            };
+            cardType: {
+                id: number;
+                name: string;
+            };
+        } & {
             id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            power: string | null;
+            toughness: string | null;
+            artist: string | null;
             name: string;
-        };
-        cardType: {
-            id: number;
-            name: string;
-        };
-    } & {
-        id: number;
-        createdAt: Date;
-        updatedAt: Date;
-        power: string | null;
-        toughness: string | null;
-        artist: string | null;
-        name: string;
-        manaCost: string | null;
-        oracleText: string | null;
+            manaCost: string | null;
+            oracleText: string | null;
+            setCode: string;
+            collectorNumber: string;
+            imageUrl: string | null;
+            displayOrder: number;
+            rarityId: number;
+            cardTypeId: number;
+        })[];
+        total: number;
+    }>;
+    getAvailableSets(): Promise<{
         setCode: string;
-        collectorNumber: string;
-        imageUrl: string | null;
-        displayOrder: number;
-        rarityId: number;
-        cardTypeId: number;
-    })[]>;
+        name: string;
+        totalCards: number;
+    }[]>;
     findOne(idValue: string): Promise<{
         rarity: {
             id: number;

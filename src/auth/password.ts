@@ -1,14 +1,19 @@
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
-const deriveKey = promisify(scrypt);
+type ScryptFn = (
+  password: string | Buffer | NodeJS.ArrayBufferView,
+  salt: string | Buffer | NodeJS.ArrayBufferView,
+  keylen: number,
+) => Promise<Buffer>;
+const deriveKey = promisify(scrypt) as unknown as ScryptFn;
 
 // scrypt$<N>$<r>$<p>$<salt hex 32 chars>$<key hex 128 chars>
 const HASH_PATTERN = /^scrypt\$16384\$8\$1\$([a-f0-9]{32})\$([a-f0-9]{128})$/;
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString('hex');
-  const key = (await deriveKey(password, salt, 64)) as Buffer;
+  const key = await deriveKey(password, salt, 64);
   return `scrypt$16384$8$1$${salt}$${key.toString('hex')}`;
 }
 
@@ -29,7 +34,7 @@ export async function verifyPassword(
 
   try {
     // El salt se pasa como texto hexadecimal, igual que al crear el usuario.
-    const candidateKey = (await deriveKey(password, salt, 64)) as Buffer;
+    const candidateKey = await deriveKey(password, salt, 64);
     const storedKey = Buffer.from(storedKeyHex, 'hex');
     return timingSafeEqual(candidateKey, storedKey);
   } catch {

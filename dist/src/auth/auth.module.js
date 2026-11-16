@@ -14,16 +14,25 @@ const users_module_1 = require("../users/users.module");
 const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
 const jwt_strategy_1 = require("./jwt.strategy");
+const login_rate_limit_middleware_1 = require("./login-rate-limit.middleware");
 const auth_config_1 = require("./auth.config");
 let AuthModule = class AuthModule {
+    configure(consumer) {
+        consumer.apply(login_rate_limit_middleware_1.LoginRateLimitMiddleware).forRoutes(auth_controller_1.AuthController);
+    }
 };
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
+    (0, common_1.Global)(),
     (0, common_1.Module)({
-        imports: [users_module_1.UsersModule, passport_1.PassportModule, jwt_1.JwtModule.register((0, auth_config_1.jwtOptions)())],
+        imports: [
+            users_module_1.UsersModule,
+            passport_1.PassportModule.register({ defaultStrategy: 'jwt' }),
+            jwt_1.JwtModule.register((0, auth_config_1.jwtOptions)()),
+        ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy],
-        exports: [jwt_1.JwtModule, passport_1.PassportModule],
+        exports: [auth_service_1.AuthService, jwt_1.JwtModule, passport_1.PassportModule],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

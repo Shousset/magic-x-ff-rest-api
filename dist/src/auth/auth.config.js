@@ -1,21 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.jwtOptions = jwtOptions;
+require("dotenv/config");
 function jwtOptions() {
     const secret = process.env.JWT_SECRET;
-    const expiresInRaw = process.env.JWT_EXPIRES_IN;
-    if (!secret || secret.trim().length === 0) {
-        throw new Error('JWT_SECRET is not configured');
+    if (!secret || secret.trim().length < 32) {
+        throw new Error('JWT_SECRET must be set to a secret of at least 32 characters. ' +
+            'Generate one with: node -e "console.log(require("crypto").randomBytes(32).toString("hex"))"');
     }
+    const expiresInRaw = process.env.JWT_EXPIRES_IN || '86400';
     const expiresIn = Number(expiresInRaw);
-    if (!Number.isInteger(expiresIn) || expiresIn <= 0) {
-        throw new Error('JWT_EXPIRES_IN must be a positive integer number of seconds (e.g. 3600)');
-    }
+    const validExpiresIn = Number.isInteger(expiresIn) && expiresIn > 0 ? expiresIn : 86400;
     return {
         secret,
         signOptions: {
             algorithm: 'HS256',
-            expiresIn,
+            expiresIn: validExpiresIn,
         },
     };
 }

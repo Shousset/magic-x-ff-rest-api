@@ -1,15 +1,52 @@
-import { Controller, Get, Post, Delete, Param } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { UserRole } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
+import { UpdateCardDto } from './dto/update-card.dto';
 
 @Controller('cards')
 export class CardsController {
   constructor(private readonly cardsService: CardsService) {}
 
+  // Lectura pública: no requiere token, se mantiene igual que antes.
   @Get()
-  async findAll() {
-    const cards = await this.cardsService.findAll();
-    return { data: cards };
+  async findAll(
+    @Query('search') search?: string,
+    @Query('rarity') rarity?: string,
+    @Query('setCode') setCode?: string,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
+  ) {
+    const { data, total } = await this.cardsService.findAll({
+      search,
+      rarity,
+      setCode,
+      limit,
+      offset,
+    });
+    return {
+      data,
+      meta: { total, limit: limit ?? total, offset: offset ?? 0 },
+    };
+  }
+
+  @Get('sets')
+  getSets() {
+    return this.cardsService.getAvailableSets();
   }
 
   @Get(':id')
@@ -17,11 +54,24 @@ export class CardsController {
     return this.cardsService.findOne(id);
   }
 
+  // Escritura: solo un usuario autenticado con rol ADMINISTRATOR puede
+  // seguir cargando/corrigiendo/borrando cartas (p. ej. desde Insomnia).
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMINISTRATOR)
   @Post()
-  create(createCardDto: CreateCardDto) {
+  create(@Body() createCardDto: CreateCardDto) {
     return this.cardsService.create(createCardDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMINISTRATOR)
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateCardDto: UpdateCardDto) {
+    return this.cardsService.update(id, updateCardDto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMINISTRATOR)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.cardsService.remove(id);

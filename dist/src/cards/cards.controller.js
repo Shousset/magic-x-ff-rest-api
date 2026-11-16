@@ -14,22 +14,42 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CardsController = void 0;
 const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
+const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const roles_guard_1 = require("../auth/roles.guard");
+const roles_decorator_1 = require("../auth/roles.decorator");
 const cards_service_1 = require("./cards.service");
 const create_card_dto_1 = require("./dto/create-card.dto");
+const update_card_dto_1 = require("./dto/update-card.dto");
 let CardsController = class CardsController {
     cardsService;
     constructor(cardsService) {
         this.cardsService = cardsService;
     }
-    async findAll() {
-        const cards = await this.cardsService.findAll();
-        return { data: cards };
+    async findAll(search, rarity, setCode, limit, offset) {
+        const { data, total } = await this.cardsService.findAll({
+            search,
+            rarity,
+            setCode,
+            limit,
+            offset,
+        });
+        return {
+            data,
+            meta: { total, limit: limit ?? total, offset: offset ?? 0 },
+        };
+    }
+    getSets() {
+        return this.cardsService.getAvailableSets();
     }
     findOne(id) {
         return this.cardsService.findOne(id);
     }
     create(createCardDto) {
         return this.cardsService.create(createCardDto);
+    }
+    update(id, updateCardDto) {
+        return this.cardsService.update(id, updateCardDto);
     }
     remove(id) {
         return this.cardsService.remove(id);
@@ -38,10 +58,21 @@ let CardsController = class CardsController {
 exports.CardsController = CardsController;
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('search')),
+    __param(1, (0, common_1.Query)('rarity')),
+    __param(2, (0, common_1.Query)('setCode')),
+    __param(3, (0, common_1.Query)('limit', new common_1.ParseIntPipe({ optional: true }))),
+    __param(4, (0, common_1.Query)('offset', new common_1.ParseIntPipe({ optional: true }))),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, String, String, Number, Number]),
     __metadata("design:returntype", Promise)
 ], CardsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('sets'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], CardsController.prototype, "getSets", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -50,12 +81,27 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], CardsController.prototype, "findOne", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMINISTRATOR),
     (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_card_dto_1.CreateCardDto]),
     __metadata("design:returntype", void 0)
 ], CardsController.prototype, "create", null);
 __decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMINISTRATOR),
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_card_dto_1.UpdateCardDto]),
+    __metadata("design:returntype", void 0)
+], CardsController.prototype, "update", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.ADMINISTRATOR),
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
