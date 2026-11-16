@@ -6,6 +6,7 @@ import { RaritiesModule } from './rarities/rarities.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CollectionsModule } from './collections/collections.module';
+import { ImagesModule } from './images/images.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -17,6 +18,7 @@ import { AppController } from './app.controller';
     forwardRef(() => UsersModule),
     forwardRef(() => AuthModule),
     forwardRef(() => CollectionsModule),
+    ImagesModule,
   ],
   controllers: [AppController],
   providers: [],

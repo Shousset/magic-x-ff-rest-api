@@ -21,14 +21,44 @@ let CardsService = class CardsService {
     findAll(filters = {}) {
         const search = filters.search?.trim();
         const rarity = filters.rarity?.trim();
-        return this.prisma.card.findMany({
-            where: {
-                ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
-                ...(rarity ? { rarity: { name: rarity } } : {}),
-            },
-            include: { rarity: true, cardType: true },
-            orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],
+        const setCode = filters.setCode?.trim().toUpperCase();
+        const limit = filters.limit ?? 50;
+        const offset = filters.offset ?? 0;
+        const where = {
+            ...(search
+                ? { name: { contains: search, mode: 'insensitive' } }
+                : {}),
+            ...(rarity ? { rarity: { name: rarity } } : {}),
+            ...(setCode ? { setCode } : {}),
+        };
+        return this.prisma
+            .$transaction([
+            this.prisma.card.findMany({
+                where,
+                include: { rarity: true, cardType: true },
+                orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.card.count({ where }),
+        ])
+            .then(([data, total]) => ({ data, total }));
+    }
+    async getAvailableSets() {
+        const setNames = {
+            FIN: 'Final Fantasy',
+            HOB: 'The Hobbit',
+        };
+        const grouped = await this.prisma.card.groupBy({
+            by: ['setCode'],
+            _count: { id: true },
+            orderBy: { setCode: 'asc' },
         });
+        return grouped.map((group) => ({
+            setCode: group.setCode,
+            name: setNames[group.setCode] ?? group.setCode,
+            totalCards: group._count.id,
+        }));
     }
     async findOne(idValue) {
         const id = this.parseId(idValue);
@@ -187,11 +217,14 @@ let CardsService = class CardsService {
         };
     }
     handleUniqueConstraint(error) {
-        if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
-            error.code === 'P2003') {
+        if (typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === 'P2002' &&
+            error instanceof client_1.Prisma.PrismaClientKnownRequestError) {
             throw new common_1.ConflictException('A card with the same setCode and collectorNumber already exists');
         }
-        throw new common_1.ConflictException('A card with the same setCode and collectorNumber already exists');
+        throw error;
     }
 };
 exports.CardsService = CardsService;

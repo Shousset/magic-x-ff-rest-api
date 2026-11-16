@@ -16,17 +16,33 @@ const prisma_service_1 = require("../../prisma/prisma.service");
 const ENTRY_INCLUDE = {
     card: { include: { rarity: true, cardType: true } },
 };
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
+function resolvePagination(pagination) {
+    const rawLimit = pagination?.limit ?? DEFAULT_LIMIT;
+    const rawOffset = pagination?.offset ?? 0;
+    const limit = Math.min(Math.max(Number.isInteger(rawLimit) ? rawLimit : DEFAULT_LIMIT, 1), MAX_LIMIT);
+    const offset = Math.max(Number.isInteger(rawOffset) ? rawOffset : 0, 0);
+    return { limit, offset };
+}
 let CollectionsService = class CollectionsService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
-    findAllForUser(userId) {
-        return this.prisma.collectionEntry.findMany({
-            where: { userId },
-            include: ENTRY_INCLUDE,
-            orderBy: { createdAt: 'asc' },
-        });
+    async findAllForUser(userId, pagination) {
+        const { limit, offset } = resolvePagination(pagination);
+        const [data, total] = await Promise.all([
+            this.prisma.collectionEntry.findMany({
+                where: { userId },
+                include: ENTRY_INCLUDE,
+                orderBy: { createdAt: 'asc' },
+                take: limit,
+                skip: offset,
+            }),
+            this.prisma.collectionEntry.count({ where: { userId } }),
+        ]);
+        return { data, meta: { total, limit, offset } };
     }
     async create(userId, dto) {
         const quantity = dto.quantity ?? 1;

@@ -15,6 +15,7 @@ const rarities_module_1 = require("./rarities/rarities.module");
 const users_module_1 = require("./users/users.module");
 const auth_module_1 = require("./auth/auth.module");
 const collections_module_1 = require("./collections/collections.module");
+const images_module_1 = require("./images/images.module");
 const app_controller_1 = require("./app.controller");
 let AppModule = class AppModule {
 };
@@ -29,6 +30,7 @@ exports.AppModule = AppModule = __decorate([
             (0, common_1.forwardRef)(() => users_module_1.UsersModule),
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
             (0, common_1.forwardRef)(() => collections_module_1.CollectionsModule),
+            images_module_1.ImagesModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [],

@@ -9,42 +9,14 @@ type AuthenticatedRequest = {
 export declare class CollectionsController {
     private readonly collectionsService;
     constructor(collectionsService: CollectionsService);
-    findAll(request: AuthenticatedRequest): import("@prisma/client").Prisma.PrismaPromise<({
-        card: {
-            rarity: {
-                id: number;
-                name: string;
-            };
-            cardType: {
-                id: number;
-                name: string;
-            };
-        } & {
-            id: number;
-            createdAt: Date;
-            updatedAt: Date;
-            power: string | null;
-            toughness: string | null;
-            artist: string | null;
-            name: string;
-            manaCost: string | null;
-            oracleText: string | null;
-            setCode: string;
-            collectorNumber: string;
-            imageUrl: string | null;
-            displayOrder: number;
-            rarityId: number;
-            cardTypeId: number;
+    findAll(request: AuthenticatedRequest): Promise<{
+        data: unknown[];
+        meta: {
+            total: number;
+            limit: number;
+            offset: number;
         };
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        cardId: number;
-        quantity: number;
-        isFoil: boolean;
-        userId: string;
-    })[]>;
+    }>;
     summary(request: AuthenticatedRequest): Promise<{
         totalCards: number;
         uniqueCards: number;
