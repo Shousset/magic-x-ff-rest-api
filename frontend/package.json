@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3004",
     "build": "next build",
-    "start": "next start -p 3004",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint",
     "test": "tsc --target ES2020 --module commonjs --moduleResolution node --esModuleInterop --strict --skipLibCheck --types node --outDir .next/test-build src/lib/pagination.ts test/pagination.test.ts && node --test .next/test-build/test/pagination.test.js"
   },

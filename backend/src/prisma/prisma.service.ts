@@ -21,7 +21,7 @@ export class PrismaService
     } catch {
       this.logger.warn(
         '⚠️ No se pudo conectar a la base de datos PostgreSQL en este momento. ' +
-          'Asegúrate de configurar la variable DATABASE_URL en el archivo .env con las credenciales de tu base de datos y que PostgreSQL esté corriendo.',
+          'Asegúrate de configurar DATABASE_URL con las credenciales de tu base de datos y que PostgreSQL esté disponible.',
       );
     }
   }

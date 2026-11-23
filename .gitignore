@@ -1,16 +1,22 @@
 ```
-# Dependencies
 node_modules/
-
-# Build artifacts
+**/node_modules/
+backend/dist/
+backend/coverage/
+frontend/.next/
+frontend/out/
 dist/
+coverage/
 *.js.map
 *.tsbuildinfo
 
-# Environment
 .env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 
-# Logs
 *.log
 server.log
 ```

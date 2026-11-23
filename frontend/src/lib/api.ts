@@ -11,7 +11,8 @@ export async function request<T>(
   }
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const response = await fetch(path, {
+  const apiPath = path.startsWith('/') ? path : `/${path}`;
+  const response = await fetch(`/api${apiPath}`, {
     ...options,
     headers,
     cache: 'no-store',

@@ -111,4 +111,9 @@ export class AppController {
 </body>
 </html>`;
   }
+
+  @Get('health')
+  getHealth(): { status: 'ok' } {
+    return { status: 'ok' };
+  }
 }
