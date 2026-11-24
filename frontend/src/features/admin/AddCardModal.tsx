@@ -1,8 +1,10 @@
 import type { FormEventHandler } from 'react';
+import { translate, type Locale } from '@/lib/i18n';
 import { FormInput } from './FormInput';
 
 type AddCardModalProps = {
   error: string;
+  locale: Locale;
   pending: boolean;
   onClose: () => void;
   onSubmit: FormEventHandler<HTMLFormElement>;
@@ -10,10 +12,13 @@ type AddCardModalProps = {
 
 export function AddCardModal({
   error,
+  locale,
   pending,
   onClose,
   onSubmit,
 }: AddCardModalProps) {
+  const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
+
   return (
     <div
       className="modal-backdrop active"
@@ -21,23 +26,30 @@ export function AddCardModal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="modal-content">
+      <div
+        className="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-card-heading"
+      >
         <button
           className="close-btn"
           onClick={onClose}
-          aria-label="Cerrar"
+          aria-label={t('close')}
           type="button"
         >
           ×
         </button>
-        <h2 className="add-card-heading">Registrar Nueva Carta</h2>
-        <p className="add-card-subtitle">Panel para administradores.</p>
+        <h2 id="add-card-heading" className="add-card-heading">
+          {t('addCardTitle')}
+        </h2>
+        <p className="add-card-subtitle">{t('adminPanel')}</p>
         <form onSubmit={onSubmit}>
           <div className="form-grid">
-            <FormInput name="name" label="Nombre de la Carta *" required />
+            <FormInput name="name" label={t('cardName')} required />
             <div className="form-group">
               <label className="form-label" htmlFor="card-set">
-                Colección (Set) *
+                {t('setLabel')}
               </label>
               <select
                 id="card-set"
@@ -52,37 +64,37 @@ export function AddCardModal({
             </div>
             <FormInput
               name="rarity"
-              label="Rareza *"
+              label={t('rarity')}
               placeholder="mythic, rare, uncommon, common"
               required
             />
             <FormInput
               name="type"
-              label="Tipo de Carta *"
+              label={t('cardType')}
               placeholder="Legendary Creature — Halfling..."
               required
             />
             <FormInput
               name="collectorNumber"
-              label="N.º Coleccionista *"
+              label={t('collectorNumber')}
               required
             />
-            <FormInput name="manaCost" label="Coste de Maná" />
+            <FormInput name="manaCost" label={t('manaCostLabel')} />
             <FormInput
               name="stats"
-              label="Fuerza / Resistencia"
-              placeholder="Ej: 2/2"
+              label={t('stats')}
+              placeholder={t('statsPlaceholder')}
             />
-            <FormInput name="artist" label="Artista" />
+            <FormInput name="artist" label={t('artistLabel')} />
             <FormInput
               name="imageUrl"
-              label="URL de la Imagen"
+              label={t('imageUrl')}
               type="url"
               full
             />
             <div className="form-group full">
               <label className="form-label" htmlFor="card-oracle">
-                Texto de Habilidad (Oracle Text)
+                {t('oracleTextLabel')}
               </label>
               <textarea
                 id="card-oracle"
@@ -98,14 +110,14 @@ export function AddCardModal({
           )}
           <div className="form-actions">
             <button className="btn btn-outline" onClick={onClose} type="button">
-              Cancelar
+              {t('cancel')}
             </button>
             <button
               className="btn btn-primary"
               type="submit"
               disabled={pending}
             >
-              {pending ? 'Guardando...' : 'Guardar Carta'}
+              {pending ? t('saving') : t('saveCard')}
             </button>
           </div>
         </form>

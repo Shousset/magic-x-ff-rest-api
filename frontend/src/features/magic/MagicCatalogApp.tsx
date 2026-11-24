@@ -17,6 +17,13 @@ import { LoginModal } from '@/features/auth/LoginModal';
 import { PaginationControls } from '@/features/magic/PaginationControls';
 import { VirtualizedCardGrid } from '@/features/magic/VirtualizedCardGrid';
 import { getPageOffset } from '@/lib/pagination';
+import {
+  resolveLocale,
+  translate,
+  translateRarity,
+  type Locale,
+  type TranslationKey,
+} from '@/lib/i18n';
 
 // Skeleton loading components
 const SkeletonCard = () => (
@@ -50,7 +57,8 @@ export default function Home() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [rarity, setRarity] = useState('');
   const [selectedSet, setSelectedSet] = useState('');
-  const [catalogStatus, setCatalogStatus] = useState('Cargando catálogo...');
+  const [catalogStatus, setCatalogStatus] = useState('');
+  const [catalogError, setCatalogError] = useState(false);
   const [activeTab, setActiveTab] = useState<'catalog' | 'sets' | 'mine'>(
     'catalog',
   );
@@ -73,6 +81,15 @@ export default function Home() {
   const [quantity, setQuantity] = useState(1);
   const [foil, setFoil] = useState(false);
   const [loadingCollection, setLoadingCollection] = useState(false);
+  const [locale, setLocale] = useState<Locale>('es');
+  const [localeLoaded, setLocaleLoaded] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const t = (
+    key: TranslationKey,
+    values?: Record<string, string | number>,
+  ) => translate(locale, key, values);
 
   const totalSetCards = useMemo(
     () => sets.reduce((total, set) => total + set.totalCards, 0),
@@ -97,10 +114,30 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const savedLocale = window.localStorage.getItem('app_language');
+      setLocale(resolveLocale(savedLocale, window.navigator.language));
+      setLocaleLoaded(true);
+      setSpeechSupported('speechSynthesis' in window);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (!localeLoaded) return;
+    document.documentElement.lang = locale;
+    window.localStorage.setItem('app_language', locale);
+  }, [locale, localeLoaded]);
+
+  useEffect(() => {
     if (!themeLoaded) return;
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem('app_theme', theme);
   }, [theme, themeLoaded]);
+
+  useEffect(() => () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  }, []);
 
   useEffect(() => {
     const savedToken = window.localStorage.getItem('jwt_token');
@@ -154,12 +191,12 @@ export default function Home() {
       setCollectionError(
         error instanceof Error
           ? error.message
-          : 'No se pudo cargar tu colección',
+          : translate(locale, 'collectionLoadError'),
       );
     } finally {
       setLoadingCollection(false);
     }
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (!token) return;
@@ -171,7 +208,8 @@ export default function Home() {
 
   const loadCards = useCallback(async () => {
     setLoadingCatalog(true);
-    setCatalogStatus('Buscando cartas...');
+    setCatalogError(false);
+    setCatalogStatus(translate(locale, 'searchingCards'));
     const params = new URLSearchParams();
     if (debouncedSearch) params.set('search', debouncedSearch);
     if (rarity) params.set('rarity', rarity);
@@ -191,20 +229,22 @@ export default function Home() {
         setCurrentPage(totalPagesCalc);
       }
       const setLabel = selectedSet
-        ? ` en ${selectedSet === 'HOB' ? 'The Hobbit' : 'Final Fantasy'}`
+        ? ` ${selectedSet === 'HOB' ? translate(locale, 'hobbitSet') : translate(locale, 'finalFantasySet')}`
         : '';
-      setCatalogStatus(
-        `Mostrando ${result.data.length} carta${result.data.length === 1 ? '' : 's'}${setLabel}`,
-      );
+      setCatalogStatus(translate(locale, 'cardsFound', {
+        count: result.data.length,
+        set: setLabel ? `(${setLabel.trim()})` : '',
+      }));
       setLoadingCatalog(false);
     } catch (error) {
       setCards([]);
+      setCatalogError(true);
       setCatalogStatus(
-        error instanceof Error ? error.message : 'Error al consultar catálogo',
+        error instanceof Error ? error.message : translate(locale, 'noCatalog'),
       );
       setLoadingCatalog(false);
     }
-  }, [debouncedSearch, rarity, selectedSet, currentPage]);
+  }, [debouncedSearch, rarity, selectedSet, currentPage, locale]);
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -231,7 +271,7 @@ export default function Home() {
           showToast(
             error instanceof Error
               ? error.message
-              : 'No se pudieron cargar los filtros del catálogo',
+              : translate(locale, 'filtersLoadError'),
           );
         }
       });
@@ -239,7 +279,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [showToast]);
+  }, [showToast, locale]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -286,7 +326,7 @@ export default function Home() {
         body: JSON.stringify({ username, password }),
       });
       if (!login.access_token) {
-        throw new Error('El servidor no devolvió un token de acceso válido');
+        throw new Error(t('loginTokenError'));
       }
 
       const authenticatedUser = await request<PublicUser>(
@@ -302,10 +342,10 @@ export default function Home() {
         JSON.stringify(authenticatedUser),
       );
       setModal(null);
-      showToast(`Bienvenido, ${authenticatedUser.username}`);
+      showToast(t('welcome', { username: authenticatedUser.username }));
     } catch (error) {
       setLoginError(
-        error instanceof Error ? error.message : 'No se pudo iniciar sesión',
+        error instanceof Error ? error.message : t('loginError'),
       );
     } finally {
       setLoginPending(false);
@@ -319,7 +359,7 @@ export default function Home() {
     setSummary(null);
     window.localStorage.removeItem('jwt_token');
     window.localStorage.removeItem('user_info');
-    showToast('Sesión cerrada');
+    showToast(t('signedOut'));
   }
 
   async function addSelectedCard() {
@@ -341,11 +381,13 @@ export default function Home() {
         },
         token,
       );
-      showToast(`${quantity}x "${selectedCard.name}" añadida a tu colección`);
+      showToast(
+        t('collectionAdded', { count: quantity, name: selectedCard.name }),
+      );
       await loadCollection(token);
     } catch (error) {
       showToast(
-        error instanceof Error ? error.message : 'No se pudo agregar la carta',
+        error instanceof Error ? error.message : t('collectionAddError'),
       );
     }
   }
@@ -368,7 +410,7 @@ export default function Home() {
       await loadCollection(token);
     } catch (error) {
       showToast(
-        error instanceof Error ? error.message : 'Error al actualizar cantidad',
+        error instanceof Error ? error.message : t('quantityUpdateError'),
       );
     }
   }
@@ -377,13 +419,47 @@ export default function Home() {
     if (!token) return;
     try {
       await request<void>(`/collections/${id}`, { method: 'DELETE' }, token);
-      showToast('Carta eliminada de tu colección');
+      showToast(t('cardRemoved'));
       await loadCollection(token);
     } catch (error) {
       showToast(
-        error instanceof Error ? error.message : 'Error al eliminar carta',
+        error instanceof Error ? error.message : t('cardRemoveError'),
       );
     }
+  }
+
+  function toggleSpeech() {
+    if (!speechSupported) {
+      showToast(t('speechUnavailable'));
+      return;
+    }
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const text = [selectedCard?.name, selectedCard?.oracleText]
+      .filter(Boolean)
+      .join('. ');
+    if (!text) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = locale === 'en' ? 'en-US' : 'es-ES';
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      showToast(t('speechUnavailable'));
+    };
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+  }
+
+  function stopSpeech() {
+    if (speechSupported) window.speechSynthesis.cancel();
+    setIsSpeaking(false);
   }
 
   async function createCard(event: FormEvent<HTMLFormElement>) {
@@ -418,13 +494,13 @@ export default function Home() {
       );
       setModal(null);
       formElement.reset();
-      showToast('Carta agregada al catálogo');
+      showToast(t('cardAdded'));
       const availableSets = await request<SetInfo[]>('/cards/sets');
       setSets(availableSets);
       await loadCards();
     } catch (error) {
       setAddCardError(
-        error instanceof Error ? error.message : 'Error al guardar la carta',
+        error instanceof Error ? error.message : t('cardSaveError'),
       );
     } finally {
       setAddCardPending(false);
@@ -455,15 +531,15 @@ export default function Home() {
             />
             <span className="brand-divider" />
             <span className="brand-subtitle-badge">
-              Final Fantasy &amp; The Hobbit
+              {t('brandSubtitle')}
             </span>
           </button>
           <div className="header-actions">
             <button
               className="btn btn-outline btn-icon"
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              title="Alternar tema"
-              aria-label="Alternar tema"
+              title={t('themeToggle')}
+              aria-label={t('themeToggle')}
               type="button"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -476,27 +552,50 @@ export default function Home() {
                 />
               </svg>
             </button>
+            <label className="sr-only" htmlFor="language-select">
+              {t('language')}
+            </label>
+            <select
+              id="language-select"
+              className="select-input language-select"
+              aria-label={t('language')}
+              value={locale}
+              onChange={(event) => {
+                const nextLocale = event.target.value;
+                if (nextLocale === 'es' || nextLocale === 'en') {
+                  stopSpeech();
+                  setLocale(nextLocale);
+                }
+              }}
+            >
+              <option value="es">Español</option>
+              <option value="en">English</option>
+            </select>
             {user?.role === 'ADMINISTRATOR' && (
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() => setModal('add-card')}
                 type="button"
               >
-                Nueva Carta
+                {t('adminNewCard')}
               </button>
             )}
             {user ? (
               <div className="header-user">
                 <span>
                   <strong>{user.username}</strong>
-                  <small>{user.role}</small>
+                  <small>
+                    {user.role === 'ADMINISTRATOR'
+                      ? t('administrator')
+                      : t('player')}
+                  </small>
                 </span>
                 <button
                   className="btn btn-outline btn-sm"
                   onClick={logout}
                   type="button"
                 >
-                  Salir
+                  {t('signOut')}
                 </button>
               </div>
             ) : (
@@ -505,7 +604,7 @@ export default function Home() {
                 onClick={() => setModal('login')}
                 type="button"
               >
-                Iniciar Sesión
+                {t('signIn')}
               </button>
             )}
           </div>
@@ -513,28 +612,30 @@ export default function Home() {
       </header>
 
       <div className="app-container">
-        <nav className="tabs-nav" aria-label="Secciones principales">
+        <nav className="tabs-nav" aria-label={t('mainSections')}>
           <button
             className={`tab-btn ${activeTab === 'catalog' ? 'active' : ''}`}
             onClick={() => changeTab('catalog')}
             type="button"
           >
-            Catálogo General
+            {t('catalog')}
           </button>
           <button
             className={`tab-btn ${activeTab === 'sets' ? 'active' : ''}`}
             onClick={() => changeTab('sets')}
             type="button"
           >
-            Búsqueda por Colección
-            <span className="tab-badge">{sets.length} Sets</span>
+            {t('collectionSearch')}
+            <span className="tab-badge">
+              {sets.length} {t('sets')}
+            </span>
           </button>
           <button
             className={`tab-btn ${activeTab === 'mine' ? 'active' : ''}`}
             onClick={() => changeTab('mine')}
             type="button"
           >
-            Mi Colección
+            {t('myCollection')}
             <span className="tab-badge">{summary?.totalCards ?? 0}</span>
           </button>
         </nav>
@@ -544,10 +645,11 @@ export default function Home() {
             <div className="collections-section" id="collections-showcase">
               <div className="collections-header">
                 <div>
-                  <h2 className="section-title">Colecciones Disponibles</h2>
+                  <h2 className="section-title">
+                    {t('availableCollections')}
+                  </h2>
                   <p className="section-subtitle">
-                    Selecciona una colección para restringir la búsqueda a sus
-                    cartas oficiales
+                    {t('collectionsSubtitle')}
                   </p>
                 </div>
                 {selectedSet && (
@@ -556,7 +658,7 @@ export default function Home() {
                     onClick={() => selectSet('')}
                     type="button"
                   >
-                    Ver todas las cartas
+                    {t('viewAllCards')}
                   </button>
                 )}
               </div>
@@ -570,14 +672,14 @@ export default function Home() {
                     <img
                       src="/img/sauron-ring.jpg"
                       className="franchise-thumb"
-                      alt="Anillo de Sauron"
+                      alt={t('sauronRingAlt')}
                     />
                     <span className="collection-meta">
                       <strong>The Hobbit</strong>
                       <span>
                         {sets.find((set) => set.setCode === 'HOB')
                           ?.totalCards ?? 0}{' '}
-                        cartas registradas
+                        {t('cardsRegistered')}
                       </span>
                     </span>
                   </span>
@@ -592,14 +694,14 @@ export default function Home() {
                     <img
                       src="/img/cloud-sword.jpg"
                       className="franchise-thumb"
-                      alt="Espada de Cloud"
+                      alt={t('cloudSwordAlt')}
                     />
                     <span className="collection-meta">
                       <strong>Final Fantasy</strong>
                       <span>
                         {sets.find((set) => set.setCode === 'FIN')
                           ?.totalCards ?? 0}{' '}
-                        cartas registradas
+                        {t('cardsRegistered')}
                       </span>
                     </span>
                   </span>
@@ -617,17 +719,24 @@ export default function Home() {
                       </svg>
                     </span>
                     <span className="collection-meta">
-                      <strong>Todas las Colecciones</strong>
-                      <span>{totalSetCards} cartas en total</span>
+                      <strong>{t('allCollections')}</strong>
+                      <span>
+                        {totalSetCards} {t('cardsTotal')}
+                      </span>
                     </span>
                   </span>
-                  <span className="collection-pill-code">TODAS</span>
+                  <span className="collection-pill-code">
+                    {t('allCardsSet')}
+                  </span>
                 </button>
               </div>
             </div>
 
             <div className="filter-bar">
               <div className="search-wrapper">
+                <label className="sr-only" htmlFor="card-search">
+                  {t('searchPlaceholder')}
+                </label>
                 <svg
                   className="search-icon-svg"
                   viewBox="0 0 24 24"
@@ -636,9 +745,10 @@ export default function Home() {
                   <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
                 </svg>
                 <input
+                  id="card-search"
                   type="search"
                   className="search-input"
-                  placeholder="Buscar carta por nombre (ej: Bilbo, Cloud, Sephiroth, Gandalf)..."
+                  placeholder={t('searchPlaceholder')}
                   value={search}
                   onChange={(event) => {
                     setSearch(event.target.value);
@@ -649,17 +759,17 @@ export default function Home() {
               </div>
               <select
                 className="select-input"
-                aria-label="Filtrar por rareza"
+                aria-label={t('rarityFilter')}
                 value={rarity}
                 onChange={(event) => {
                   setRarity(event.target.value);
                   setCurrentPage(1);
                 }}
               >
-                <option value="">Todas las Rarezas</option>
+                <option value="">{t('allRarities')}</option>
                 {rarities.map((item) => (
                   <option value={item.name} key={item.name}>
-                    {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
+                    {translateRarity(locale, item.name)}
                   </option>
                 ))}
               </select>
@@ -669,10 +779,10 @@ export default function Home() {
               <span>{catalogStatus}</span>
               {selectedSet && (
                 <span className="active-collection-banner">
-                  Colección activa:{' '}
+                  {t('activeCollection')}{' '}
                   {selectedSet === 'HOB'
-                    ? 'The Hobbit (HOB)'
-                    : 'Final Fantasy (FIN)'}
+                    ? `${t('hobbitSet')} (HOB)`
+                    : `${t('finalFantasySet')} (FIN)`}
                 </span>
               )}
             </div>
@@ -683,7 +793,9 @@ export default function Home() {
               ) : cards.length ? (
                 <VirtualizedCardGrid
                   cards={cards}
+                  locale={locale}
                   onCardSelect={(card) => {
+                    stopSpeech();
                     setSelectedCard(card);
                     setQuantity(1);
                     setFoil(false);
@@ -692,14 +804,14 @@ export default function Home() {
               ) : (
                 <div className="empty-state">
                   <h3>
-                    {catalogStatus.startsWith('Error')
-                      ? 'No se pudo cargar el catálogo'
-                      : 'No se encontraron cartas'}
+                    {catalogError
+                      ? t('noCatalog')
+                      : t('noCards')}
                   </h3>
                   <p>
-                    {catalogStatus.startsWith('Error')
+                    {catalogError
                       ? catalogStatus
-                      : 'Modifica los términos de búsqueda o selecciona otra colección.'}
+                      : t('emptySearch')}
                   </p>
                 </div>
               )}
@@ -707,6 +819,7 @@ export default function Home() {
             <PaginationControls
               currentPage={currentPage}
               totalPages={totalPages}
+              locale={locale}
               disabled={loadingCatalog}
               onPageChange={handlePageChange}
             />
@@ -715,25 +828,26 @@ export default function Home() {
           <section className="user-collection-section">
             <div className="collections-header">
               <div>
-                <h2 className="section-title">Mi Colección Personal</h2>
+                <h2 className="section-title">
+                  {t('personalCollection')}
+                </h2>
                 <p className="section-subtitle">
-                  Inventario de cartas registradas en tu cuenta
+                  {t('collectionSubtitle')}
                 </p>
               </div>
             </div>
             {!token ? (
               <div className="collection-auth-warning">
-                <h3>Inicia sesión para gestionar tu colección</h3>
+                <h3>{t('loginToManage')}</h3>
                 <p>
-                  Registra cartas de Final Fantasy o The Hobbit en tu inventario
-                  personal, marca versiones Foil y administra tus cantidades.
+                  {t('collectionDescription')}
                 </p>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => setModal('login')}
                   type="button"
                 >
-                  Iniciar Sesión
+                  {t('signIn')}
                 </button>
               </div>
             ) : (
@@ -745,33 +859,40 @@ export default function Home() {
                 )}
                 <div className="kpi-grid">
                   <div className="kpi-card">
-                    <span className="kpi-label">Total de Cartas</span>
+                    <span className="kpi-label">{t('totalCards')}</span>
                     <span className="kpi-value">
                       {summary?.totalCards ?? 0}
                     </span>
-                    <span className="kpi-sub">Copias registradas</span>
+                    <span className="kpi-sub">{t('copiesRegistered')}</span>
                   </div>
                   <div className="kpi-card">
-                    <span className="kpi-label">Cartas Únicas</span>
+                    <span className="kpi-label">{t('uniqueCards')}</span>
                     <span className="kpi-value">
                       {summary?.uniqueCards ?? 0}
                     </span>
-                    <span className="kpi-sub">Modelos diferentes</span>
+                    <span className="kpi-sub">{t('differentCards')}</span>
                   </div>
                   <div className="kpi-card">
-                    <span className="kpi-label">Por Rarezas</span>
+                    <span className="kpi-label">{t('byRarity')}</span>
                     <span className="kpi-value kpi-rarities">
                       {summary
                         ? Object.entries(summary.byRarity)
-                            .map(([name, count]) => `${name}: ${count}`)
-                            .join(' · ') || 'Sin cartas registradas'
+                            .map(
+                              ([name, count]) =>
+                                `${translateRarity(locale, name)}: ${count}`,
+                            )
+                            .join(' · ') || t('noCardsRegistered')
                         : '—'}
                     </span>
-                    <span className="kpi-sub">Distribución en inventario</span>
+                    <span className="kpi-sub">
+                      {t('inventoryDistribution')}
+                    </span>
                   </div>
                 </div>
                 {loadingCollection ? (
-                  <p className="collection-loading">Cargando colección...</p>
+                  <p className="collection-loading">
+                    {t('loadingCollection')}
+                  </p>
                 ) : entries.length ? (
                   <div className="collection-list">
                     {entries.map((entry) => (
@@ -799,7 +920,7 @@ export default function Home() {
                               {entry.card.setCode}
                             </span>
                             <span className="badge">
-                              {entry.card.rarity.name}
+                              {translateRarity(locale, entry.card.rarity.name)}
                             </span>
                             {entry.isFoil && (
                               <span className="entry-foil-badge">FOIL</span>
@@ -813,7 +934,7 @@ export default function Home() {
                               onClick={() =>
                                 void updateEntry(entry, entry.quantity - 1)
                               }
-                              title="Reducir cantidad"
+                              title={t('decreaseQuantity')}
                               type="button"
                             >
                               -
@@ -826,7 +947,7 @@ export default function Home() {
                               onClick={() =>
                                 void updateEntry(entry, entry.quantity + 1)
                               }
-                              title="Aumentar cantidad"
+                              title={t('increaseQuantity')}
                               type="button"
                             >
                               +
@@ -837,7 +958,7 @@ export default function Home() {
                             onClick={() => void removeEntry(entry.id)}
                             type="button"
                           >
-                            Eliminar
+                            {t('removeCard')}
                           </button>
                         </div>
                       </article>
@@ -845,11 +966,8 @@ export default function Home() {
                   </div>
                 ) : (
                   <div className="empty-collection">
-                    <h4>Tu colección está vacía</h4>
-                    <p>
-                      Explora el catálogo y pulsa en “Añadir a Colección” en
-                      cualquier carta.
-                    </p>
+                    <h4>{t('emptyCollection')}</h4>
+                    <p>{t('emptyCollectionHint')}</p>
                   </div>
                 )}
               </>
@@ -862,14 +980,25 @@ export default function Home() {
         <div
           className="modal-backdrop active"
           onClick={(event) => {
-            if (event.target === event.currentTarget) setSelectedCard(null);
+            if (event.target === event.currentTarget) {
+              stopSpeech();
+              setSelectedCard(null);
+            }
           }}
         >
-          <div className="modal-content">
+          <div
+            className="modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="card-detail-title"
+          >
             <button
               className="close-btn"
-              onClick={() => setSelectedCard(null)}
-              aria-label="Cerrar"
+              onClick={() => {
+                stopSpeech();
+                setSelectedCard(null);
+              }}
+              aria-label={t('close')}
               type="button"
             >
               ×
@@ -899,29 +1028,35 @@ export default function Home() {
               </div>
               <div className="detail-info">
                 <div>
-                  <h2 className="detail-title">{selectedCard.name}</h2>
+                  <h2 id="card-detail-title" className="detail-title">
+                    {selectedCard.name}
+                  </h2>
                   <div className="card-badges detail-badges">
-                    <span className="badge">{selectedCard.rarity.name}</span>
+                    <span className="badge">
+                      {translateRarity(locale, selectedCard.rarity.name)}
+                    </span>
                     <span className="badge">{selectedCard.cardType.name}</span>
                     <span className="badge">
                       {selectedCard.manaCost
-                        ? `Maná: ${selectedCard.manaCost}`
-                        : 'Sin coste'}
+                        ? `${t('manaCost')} ${selectedCard.manaCost}`
+                        : t('noCost')}
                     </span>
                   </div>
                 </div>
                 <div className="detail-field">
                   <span className="detail-label">
-                    Texto de Habilidad (Oracle Text)
+                    {t('oracleText')}
                   </span>
                   <div className="oracle-box">
                     {selectedCard.oracleText ||
-                      'Sin texto de reglas registrado.'}
+                      t('noRulesText')}
                   </div>
                 </div>
                 <div className="detail-stats-grid">
                   <div className="detail-field">
-                    <span className="detail-label">Fuerza / Resistencia</span>
+                    <span className="detail-label">
+                      {t('powerToughness')}
+                    </span>
                     <span className="detail-value">
                       {selectedCard.power || selectedCard.toughness
                         ? `${selectedCard.power || '?'} / ${selectedCard.toughness || '?'}`
@@ -929,38 +1064,53 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="detail-field">
-                    <span className="detail-label">Colección de Origen</span>
+                    <span className="detail-label">
+                      {t('sourceCollection')}
+                    </span>
                     <span className="detail-value">
                       {selectedCard.setCode === 'HOB'
-                        ? 'The Hobbit (HOB)'
-                        : 'Final Fantasy (FIN)'}
+                        ? `${t('hobbitSet')} (HOB)`
+                        : `${t('finalFantasySet')} (FIN)`}
                     </span>
                   </div>
                 </div>
                 <div className="detail-field">
-                  <span className="detail-label">Artista</span>
+                  <span className="detail-label">{t('artist')}</span>
                   <span className="detail-value">
-                    {selectedCard.artist || 'Desconocido'}
+                    {selectedCard.artist || t('unknown')}
                   </span>
                 </div>
                 <div className="add-to-coll-box">
-                  <h4>Guardar en Mi Colección Personal</h4>
+                  <h4>{t('saveToCollection')}</h4>
+                  <button
+                    className="btn btn-outline btn-sm speech-button"
+                    onClick={toggleSpeech}
+                    aria-pressed={isSpeaking}
+                    disabled={!speechSupported}
+                    type="button"
+                  >
+                    {isSpeaking ? t('stopReading') : t('readAloud')}
+                  </button>
+                  {!speechSupported && (
+                    <p className="speech-unavailable" role="status">
+                      {t('speechUnavailable')}
+                    </p>
+                  )}
                   {!token ? (
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={() => setModal('login')}
                       type="button"
                     >
-                      Inicia sesión para registrar esta carta
+                      {t('signInToAdd')}
                     </button>
                   ) : (
                     <>
                       {ownedQuantity > 0 && (
                         <p className="owned-message">
-                          En tu colección: {ownedQuantity} copia
-                          {ownedQuantity === 1 ? '' : 's'}
+                          {t('ownedCount', { count: ownedQuantity })}
                           {ownedEntries.some((entry) => entry.isFoil)
-                            ? ' (incluye Foil)'
+                            ? t('includesFoil')
                             : ''}
                           .
                         </p>
@@ -972,10 +1122,10 @@ export default function Home() {
                             checked={foil}
                             onChange={(event) => setFoil(event.target.checked)}
                           />
-                          Versión Foil
+                          {t('foilVersion')}
                         </label>
                         <label className="quantity-control">
-                          Cantidad:
+                          {t('quantity')}
                           <input
                             type="number"
                             value={quantity}
@@ -996,7 +1146,7 @@ export default function Home() {
                           onClick={() => void addSelectedCard()}
                           type="button"
                         >
-                          Añadir a Colección
+                          {t('addToCollection')}
                         </button>
                       </div>
                     </>
@@ -1011,6 +1161,7 @@ export default function Home() {
       {modal === 'login' && (
         <LoginModal
           error={loginError}
+          locale={locale}
           pending={loginPending}
           onClose={() => setModal(null)}
           onSubmit={handleLogin}
@@ -1020,6 +1171,7 @@ export default function Home() {
       {modal === 'add-card' && user?.role === 'ADMINISTRATOR' && (
         <AddCardModal
           error={addCardError}
+          locale={locale}
           pending={addCardPending}
           onClose={() => setModal(null)}
           onSubmit={createCard}

@@ -4,12 +4,14 @@ import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import type { RowComponentProps } from 'react-window';
 import type { Card } from '@/types/magic';
+import { translateRarity, type Locale } from '@/lib/i18n';
 
 const fallbackImage = '/img/MTG.png';
 
 type CardRowProps = {
   cards: Card[];
   columns: number;
+  locale: Locale;
   onCardSelect: (card: Card) => void;
 };
 
@@ -25,6 +27,7 @@ type CardRowProps = {
 export const CardRow = ({
   cards,
   columns,
+  locale,
   index,
   style,
   onCardSelect,
@@ -74,7 +77,7 @@ export const CardRow = ({
               <span
                 className={`badge badge-rarity-${card.rarity.name.toLowerCase()}`}
               >
-                {card.rarity.name}
+                {translateRarity(locale, card.rarity.name)}
               </span>
               <span className="badge">{card.cardType.name}</span>
             </span>

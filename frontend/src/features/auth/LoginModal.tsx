@@ -1,7 +1,9 @@
 import type { FormEventHandler } from 'react';
+import { translate, type Locale } from '@/lib/i18n';
 
 type LoginModalProps = {
   error: string;
+  locale: Locale;
   pending: boolean;
   onClose: () => void;
   onSubmit: FormEventHandler<HTMLFormElement>;
@@ -9,10 +11,13 @@ type LoginModalProps = {
 
 export function LoginModal({
   error,
+  locale,
   pending,
   onClose,
   onSubmit,
 }: LoginModalProps) {
+  const t = (key: Parameters<typeof translate>[1]) => translate(locale, key);
+
   return (
     <div
       className="modal-backdrop active"
@@ -20,23 +25,28 @@ export function LoginModal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="modal-content login-modal">
+      <div
+        className="modal-content login-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-modal-title"
+      >
         <button
           className="close-btn"
           onClick={onClose}
-          aria-label="Cerrar"
+          aria-label={t('close')}
           type="button"
         >
           ×
         </button>
         <div className="modal-heading">
-          <h2>Iniciar Sesión</h2>
-          <p>Accede para administrar tu inventario de cartas</p>
+          <h2 id="login-modal-title">{t('loginTitle')}</h2>
+          <p>{t('loginDescription')}</p>
         </div>
         <form onSubmit={onSubmit}>
           <div className="form-group">
             <label className="form-label" htmlFor="login-username">
-              Usuario
+              {t('username')}
             </label>
             <input
               className="search-input form-input"
@@ -48,7 +58,7 @@ export function LoginModal({
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="login-password">
-              Contraseña
+              {t('password')}
             </label>
             <input
               className="search-input form-input"
@@ -69,7 +79,7 @@ export function LoginModal({
             type="submit"
             disabled={pending}
           >
-            {pending ? 'Ingresando...' : 'Ingresar'}
+            {pending ? t('loggingIn') : t('loginSubmit')}
           </button>
         </form>
       </div>

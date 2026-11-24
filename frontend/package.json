@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "lint": "eslint",
-    "test": "tsc --target ES2020 --module commonjs --moduleResolution node --esModuleInterop --strict --skipLibCheck --types node --outDir .next/test-build src/lib/pagination.ts test/pagination.test.ts && node --test .next/test-build/test/pagination.test.js"
+    "test": "tsc --target ES2020 --module commonjs --moduleResolution node --esModuleInterop --strict --skipLibCheck --types node --outDir .next/test-build src/lib/pagination.ts src/lib/i18n.ts test/pagination.test.ts test/i18n.test.ts && node --test .next/test-build/test/pagination.test.js .next/test-build/test/i18n.test.js"
   },
   "dependencies": {
     "@types/react-window": "^2.0.0",

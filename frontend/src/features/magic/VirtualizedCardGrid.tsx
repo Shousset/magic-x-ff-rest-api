@@ -3,6 +3,7 @@
 import { memo, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { List } from 'react-window';
 import type { Card } from '@/types/magic';
+import type { Locale } from '@/lib/i18n';
 import { CardRow } from './CardRow';
 
 const CARD_ROW_HEIGHT = 332; // card-img-wrapper (250px) + card-body (~82px)
@@ -12,6 +13,7 @@ const CARD_GAP = 16;
 
 type VirtualizedCardGridProps = {
   cards: Card[];
+  locale: Locale;
   onCardSelect: (card: Card) => void;
 };
 
@@ -20,7 +22,7 @@ type VirtualizedCardGridProps = {
  * scroll container. The existing pagination keeps the list to one page of cards.
  */
 export const VirtualizedCardGrid = memo(
-  ({ cards, onCardSelect }: VirtualizedCardGridProps) => {
+  ({ cards, locale, onCardSelect }: VirtualizedCardGridProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(0);
 
@@ -55,7 +57,7 @@ export const VirtualizedCardGrid = memo(
       [columns],
     );
 
-    const rowProps = { cards, onCardSelect, columns };
+    const rowProps = { cards, onCardSelect, columns, locale };
 
     if (containerWidth === 0) {
       // Render nothing until we know the real width; the grid will paint on

@@ -52,6 +52,31 @@ Configura ambas variables de origen con las URLs de los servicios Railway corres
 
 La aplicación requiere PostgreSQL y Prisma. Aplica las migraciones existentes con `npx prisma migrate deploy` desde `backend/` y con `DATABASE_URL` configurada antes de iniciar la API. Las credenciales de despliegue se configuran como variables del servicio, no en la imagen ni en `.env.example`.
 
+## Docker local
+
+El stack local ejecuta la API NestJS y Next.js en contenedores; la API usa la base PostgreSQL indicada en `backend/.env` (por ejemplo, Railway). No se crea una base local ni se publica un puerto de PostgreSQL. La web y la API solo se enlazan a `localhost`.
+
+1. Asegúrate de que `backend/.env` contiene una `DATABASE_URL` vigente y `JWT_SECRET`.
+2. Desde la raíz del repositorio, construye e inicia ambos servicios:
+
+   ```powershell
+   docker compose up -d --build
+   ```
+
+3. Abre `http://localhost:8080`. La API está disponible localmente en `http://localhost:3003`; el proxy del frontend la alcanza por la red privada de Compose en `http://api:3003`.
+4. Revisa el estado y los logs:
+
+   ```powershell
+   docker compose ps
+   docker compose logs -f api frontend
+   ```
+
+   Para detener los contenedores sin borrar datos de la base remota:
+
+   ```powershell
+   docker compose down
+   ```
+
 ## Validación local
 
 ```powershell
