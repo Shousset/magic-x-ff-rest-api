@@ -552,25 +552,34 @@ export default function Home() {
                 />
               </svg>
             </button>
-            <label className="sr-only" htmlFor="language-select">
-              {t('language')}
-            </label>
-            <select
-              id="language-select"
-              className="select-input language-select"
-              aria-label={t('language')}
-              value={locale}
-              onChange={(event) => {
-                const nextLocale = event.target.value;
-                if (nextLocale === 'es' || nextLocale === 'en') {
+            <div className="language-buttons" role="group" aria-label={t('languageSelect')}>
+              <button
+                className={`lang-btn ${locale === 'en' ? 'active' : ''}`}
+                onClick={() => {
                   stopSpeech();
-                  setLocale(nextLocale);
-                }
-              }}
-            >
-              <option value="es">Español</option>
-              <option value="en">English</option>
-            </select>
+                  setLocale('en');
+                }}
+                type="button"
+                aria-pressed={locale === 'en'}
+                title={t('languageEn')}
+                aria-label={t('languageEn')}
+              >
+                EN
+              </button>
+              <button
+                className={`lang-btn ${locale === 'es' ? 'active' : ''}`}
+                onClick={() => {
+                  stopSpeech();
+                  setLocale('es');
+                }}
+                type="button"
+                aria-pressed={locale === 'es'}
+                title={t('languageEs')}
+                aria-label={t('languageEs')}
+              >
+                ES
+              </button>
+            </div>
             {user?.role === 'ADMINISTRATOR' && (
               <button
                 className="btn btn-primary btn-sm"
